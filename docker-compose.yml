@@ -1,0 +1,236 @@
+version: '3.4'
+services:
+  consul:
+    image: consul:1.15.4
+    ports:
+      - "8500:8500"
+    command: agent -dev -client 0.0.0.0
+    networks:
+      - blockchain_network
+  
+
+  # Node 1, IPFS 1, Cluster 1
+
+  node1:
+    build: .
+    environment:
+      - NODE_ID=node1
+      - NODE_PORT=6000  
+    ports:
+      - "6000:6000"
+    networks:
+    - blockchain_network
+
+    # cluster peer0
+  ipfs1:
+    container_name: ipfs1
+    image: ipfs/go-ipfs:release
+    depends_on:
+      - node1
+    ports:
+      - "4001:4001" # ipfs swarm - expose if needed/wanted
+      - "5001:5001" # ipfs api - expose if needed/wanted
+      - "8080:8080" # ipfs gateway - expose if needed/wanted
+    volumes:
+      - ipfs1_data:/data/ipfs
+    networks:
+      - blockchain_network
+
+  cluster1:
+    container_name: cluster1
+    image: ipfs/ipfs-cluster:latest
+    depends_on:
+      - ipfs1
+    environment:
+      CLUSTER_PEERNAME: cluster1
+      CLUSTER_SECRET: ${CLUSTER_SECRET} # From shell variable if set
+      CLUSTER_IPFSHTTP_NODEMULTIADDRESS: /dns4/ipfs1/tcp/5001
+      CLUSTER_CRDT_TRUSTEDPEERS: '*' # Trust all peers in Cluster
+      CLUSTER_RESTAPI_HTTPLISTENMULTIADDRESS: /ip4/0.0.0.0/tcp/9094 # Expose API
+      CLUSTER_MONITORPINGINTERVAL: 2s # Speed up peer discovery
+      CLUSTER_REPLICATIONFACTOR_MIN: -1 # Replicate to all nodes
+      CLUSTER_REPLICATIONFACTOR_MAX: -1 # Replicate to all nodes
+    ports:
+          - "9094:9094"
+    volumes:
+      - cluster1_data:/data/ipfs-cluster
+    networks:
+      - blockchain_network
+
+  # Node 2, IPFS 2, Cluster 2
+  node2:
+    build: .
+    environment:
+      - NODE_ID=node2
+      - NODE_PORT=6001 
+    ports:
+      - "6001:6000" 
+    networks:
+    - blockchain_network
+
+  ipfs2:
+    container_name: ipfs2
+    image: ipfs/go-ipfs:release
+    depends_on:
+      - node2
+    volumes:
+      - ipfs2_data:/data/ipfs
+    networks:
+    - blockchain_network
+
+  cluster2:
+    container_name: cluster2
+    image: ipfs/ipfs-cluster:latest
+    depends_on:
+      - ipfs2
+    environment:
+      CLUSTER_PEERNAME: cluster2
+      CLUSTER_SECRET: ${CLUSTER_SECRET}
+      CLUSTER_IPFSHTTP_NODEMULTIADDRESS: /dns4/ipfs2/tcp/5001
+      CLUSTER_CRDT_TRUSTEDPEERS: '*'
+      CLUSTER_REPLICATIONFACTOR_MIN: -1 # Replicate to all nodes
+      CLUSTER_REPLICATIONFACTOR_MAX: -1 # Replicate to all nodes
+      CLUSTER_MONITORPINGINTERVAL: 2s # Speed up peer discovery
+    volumes:
+      - cluster2_data:/data/ipfs-cluster
+    networks:
+      - blockchain_network
+
+
+  # Node 3, IPFS 3, Cluster 3
+  node3:
+    build: .
+    environment:
+      - NODE_ID=node3
+      - NODE_PORT=6002 
+    ports:
+      - "6002:6000" 
+    networks:
+    - blockchain_network
+
+  ipfs3:
+    container_name: ipfs3
+    image: ipfs/go-ipfs:release
+    depends_on:
+      - node3
+    volumes:
+      - ipfs3_data:/data/ipfs
+    networks:
+    - blockchain_network
+
+  cluster3:
+    container_name: cluster3
+    image: ipfs/ipfs-cluster:latest
+    depends_on:
+      - ipfs3
+    environment:
+      CLUSTER_PEERNAME: cluster3
+      CLUSTER_SECRET: ${CLUSTER_SECRET}
+      CLUSTER_IPFSHTTP_NODEMULTIADDRESS: /dns4/ipfs3/tcp/5001
+      CLUSTER_CRDT_TRUSTEDPEERS: '*'
+      CLUSTER_REPLICATIONFACTOR_MIN: -1 # Replicate to all nodes
+      CLUSTER_REPLICATIONFACTOR_MAX: -1 # Replicate to all nodes
+      CLUSTER_MONITORPINGINTERVAL: 2s # Speed up peer discovery
+    volumes:
+      - cluster3_data:/data/ipfs-cluster
+    networks:
+      - blockchain_network
+
+  # # Node 4, IPFS 4, Cluster 4
+
+  # node4:
+  #   build: .
+  #   environment:
+  #     - NODE_ID=node4
+  #     - NODE_PORT=6003 
+  #   ports:
+  #     - "6003:6000" 
+  #   networks:
+  #   - blockchain_network
+
+  # ipfs4:
+  #   container_name: ipfs4
+  #   image: ipfs/go-ipfs:release
+  #   depends_on:
+  #     - node4
+  #   volumes:
+  #     - ipfs4_data:/data/ipfs
+  #   networks:
+  #   - blockchain_network
+
+  # cluster4:
+  #   container_name: cluster4
+  #   image: ipfs/ipfs-cluster:latest
+  #   depends_on:
+  #     - ipfs4
+  #   environment:
+  #     CLUSTER_PEERNAME: cluster4
+  #     CLUSTER_SECRET: ${CLUSTER_SECRET}
+  #     CLUSTER_IPFSHTTP_NODEMULTIADDRESS: /dns4/ipfs4/tcp/5001
+  #     CLUSTER_CRDT_TRUSTEDPEERS: '*'
+  #     CLUSTER_REPLICATIONFACTOR_MIN: -1 # Replicate to all nodes
+  #     CLUSTER_REPLICATIONFACTOR_MAX: -1 # Replicate to all nodes
+  #     CLUSTER_MONITORPINGINTERVAL: 2s # Speed up peer discovery
+  #   volumes:
+  #     - cluster4_data:/data/ipfs-cluster
+  #   networks:
+  #     - blockchain_network
+
+  # # Node 5, IPFS 5, Cluster 5
+
+  # node5:
+  #   build: .
+  #   environment:
+  #     - NODE_ID=node5
+  #     - NODE_PORT=6004 
+  #   ports:
+  #     - "6004:6000" 
+  #   networks:
+  #   - blockchain_network
+
+  # ipfs5:
+  #   container_name: ipfs5
+  #   image: ipfs/go-ipfs:release
+  #   depends_on:
+  #     - node5
+  #   volumes:
+  #     - ipfs5_data:/data/ipfs
+  #   networks:
+  #   - blockchain_network
+
+  # cluster5:
+  #   container_name: cluster5
+  #   image: ipfs/ipfs-cluster:latest
+  #   depends_on:
+  #     - ipfs5
+  #   environment:
+  #     CLUSTER_PEERNAME: cluster5
+  #     CLUSTER_SECRET: ${CLUSTER_SECRET}
+  #     CLUSTER_IPFSHTTP_NODEMULTIADDRESS: /dns4/ipfs5/tcp/5001
+  #     CLUSTER_CRDT_TRUSTEDPEERS: '*'
+  #     CLUSTER_REPLICATIONFACTOR_MIN: -1 # Replicate to all nodes
+  #     CLUSTER_REPLICATIONFACTOR_MAX: -1 # Replicate to all nodes
+  #     CLUSTER_MONITORPINGINTERVAL: 2s # Speed up peer discovery
+  #   volumes:
+  #     - cluster5_data:/data/ipfs-cluster
+  #   networks:
+  #     - blockchain_network
+
+
+networks:
+  blockchain_network:
+
+volumes:
+  cluster1_data:
+  cluster2_data:
+  cluster3_data:
+  # cluster4_data:
+  # cluster5_data:
+  ipfs1_data:
+  ipfs2_data:
+  ipfs3_data:
+  # ipfs4_data:
+  # ipfs5_data:
+
+
+
